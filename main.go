@@ -3,12 +3,29 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gocolly/colly"
 )
 
 func main() {
-	c := colly.NewCollector()
+	start := time.Now()
+
+	baseURL := "www.hoodoo.digital"
+	startingURL := "https://" + baseURL
+	url := []string{baseURL}
+
+	c := colly.NewCollector(
+		colly.AllowedDomains(url...),
+		colly.MaxDepth(0),
+		colly.IgnoreRobotsTxt(),
+		// colly.Debugger(colly.Debugger(&debug.LogDebugger{})),
+	)
+
+	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+		e.Request.Visit(e.Attr("href"))
+		// c.Visit(e.Attr("href"))
+	})
 
 	c.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL)
@@ -22,19 +39,12 @@ func main() {
 		fmt.Println("Visited", r.Request.URL)
 	})
 
-	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		e.Request.Visit(e.Attr("href"))
-	})
+	fmt.Println("Starting crawl at: ", startingURL)
 
-	c.OnHTML("tr td:nth-of-type(1)", func(e *colly.HTMLElement) {
-		fmt.Println("First column of a table row:", e.Text)
-	})
+	if err := c.Visit(startingURL); err != nil {
+		fmt.Println("Error on start of crawl: ", err)
+	}
 
-	c.OnXML("//h1", func(e *colly.XMLElement) {
-		fmt.Println(e.Text)
-	})
-
-	c.OnScraped(func(r *colly.Response) {
-		fmt.Println("Finished", r.Request.URL)
-	})
+	duration := time.Since(start)
+	fmt.Println("Execution Time: ", duration)
 }
