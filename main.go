@@ -19,8 +19,11 @@ func main() {
 		colly.AllowedDomains(url...),
 		colly.MaxDepth(0),
 		colly.IgnoreRobotsTxt(),
+		colly.Async(true),
 		// colly.Debugger(colly.Debugger(&debug.LogDebugger{})),
 	)
+
+	c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 2})
 
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
@@ -44,6 +47,7 @@ func main() {
 	if err := c.Visit(startingURL); err != nil {
 		fmt.Println("Error on start of crawl: ", err)
 	}
+	c.Wait()
 
 	duration := time.Since(start)
 	fmt.Println("Execution Time: ", duration)
